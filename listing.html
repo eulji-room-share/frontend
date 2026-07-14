@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- 백엔드 연동 지점 1/2: 매물 상세 조회 API. 홈 화면 목록(GET) API와 같은 주소를 씁니다. -->
+    <meta name="listings-api" content="/api/listings" />
+    <title>매물 상세 | 자취방 찾기</title>
+    <style>
+      :root { --blue: #1b63f0; --ink: #0b1730; --muted: #8fa0bd; --line: #edf0f5; --border: #dfe4ec; }
+      * { box-sizing: border-box; }
+      body { margin: 0; min-height: 100dvh; background: #fff; color: var(--ink); font-family: "Pretendard Variable", Pretendard, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif; }
+      button { border: 0; cursor: pointer; background: transparent; font: inherit; }
+      .app { width: min(100%, 480px); min-height: 100dvh; margin: 0 auto; background: #fff; position: relative; padding-bottom: 104px; }
+
+      .photo-carousel { position: relative; width: 100%; aspect-ratio: 1 / 1; background: #e8eef9; overflow: hidden; }
+      .photo-track { display: flex; width: 100%; height: 100%; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; }
+      .photo-track::-webkit-scrollbar { display: none; }
+      .photo-track img { flex: 0 0 100%; width: 100%; height: 100%; object-fit: cover; scroll-snap-align: start; cursor: zoom-in; }
+      .photo-empty { flex: 0 0 100%; width: 100%; height: 100%; display: grid; place-items: center; color: var(--muted); font-size: 15px; }
+      .photo-counter { position: absolute; right: 16px; bottom: 16px; padding: 5px 12px; border-radius: 999px; background: rgba(11, 23, 48, .6); color: #fff; font-size: 13px; font-weight: 600; letter-spacing: -0.02em; }
+
+      .overlay-btn { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; background: rgba(255, 255, 255, .92); color: var(--ink); box-shadow: 0 2px 8px rgba(11, 23, 48, .12); }
+      .overlay-btn svg { width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width: 2; }
+      .overlay-btn.back { position: absolute; top: 16px; left: 16px; }
+      .overlay-actions { position: absolute; top: 16px; right: 16px; display: flex; gap: 10px; }
+      .like-btn.liked { color: #ef4444; }
+      .like-btn.liked svg { fill: currentColor; }
+
+      .carousel-nav { position: absolute; top: 50%; transform: translateY(-50%); width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; background: rgba(11, 23, 48, .45); color: #fff; }
+      .carousel-nav svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 2.2; }
+      .carousel-nav.prev { left: 12px; }
+      .carousel-nav.next { right: 12px; }
+      .carousel-nav[hidden] { display: none; }
+
+      .lightbox { position: fixed; inset: 0; z-index: 20; background: rgba(4, 8, 20, .96); }
+      .lightbox[hidden] { display: none; }
+      .lightbox-track { display: flex; width: 100%; height: 100%; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; }
+      .lightbox-track::-webkit-scrollbar { display: none; }
+      .lightbox-track img { flex: 0 0 100%; width: 100%; height: 100%; object-fit: contain; scroll-snap-align: start; }
+      .lightbox-close { position: absolute; top: 16px; right: 16px; width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; background: rgba(255, 255, 255, .15); color: #fff; }
+      .lightbox-close svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; }
+      .lightbox-counter { position: absolute; top: 24px; left: 50%; transform: translateX(-50%); color: #fff; font-size: 14px; font-weight: 600; }
+
+      .content { padding: 20px 22px 0; }
+      .type-chip { display: inline-block; padding: 7px 14px; border-radius: 8px; background: #eef4ff; color: var(--blue); font-size: 14px; font-weight: 700; }
+      .description { margin: 16px 0 0; font-size: 20px; font-weight: 700; line-height: 1.45; letter-spacing: -0.03em; white-space: pre-wrap; }
+
+      .price-row { margin: 26px 0 0; font-size: 21px; font-weight: 700; letter-spacing: -0.03em; }
+
+      .info-list { margin: 18px 0 0; display: grid; gap: 10px; color: #62708a; font-size: 15px; line-height: 1.5; }
+
+      .bottom-bar { position: fixed; z-index: 2; bottom: 0; left: 50%; transform: translateX(-50%); width: min(100%, 480px); padding: 14px 22px; background: #fff; border-top: 1px solid var(--line); }
+      .chat-button { width: 100%; height: 56px; background: var(--blue); color: #fff; font-size: 16px; font-weight: 700; border-radius: 14px; }
+
+      .not-found { padding: 80px 22px; text-align: center; color: var(--muted); }
+    </style>
+  </head>
+  <body>
+    <main class="app" id="app">
+      <p class="not-found" id="not-found" hidden>매물 정보를 찾을 수 없어요.</p>
+
+      <div id="listing-view" hidden>
+        <div class="photo-carousel">
+          <div class="photo-track" id="photo-track"></div>
+          <span class="photo-counter" id="photo-counter" hidden></span>
+
+          <button class="carousel-nav prev" type="button" id="photo-prev" aria-label="이전 사진" hidden>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 6-6 6 6 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <button class="carousel-nav next" type="button" id="photo-next" aria-label="다음 사진" hidden>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+
+          <button class="overlay-btn back" type="button" id="back-btn" aria-label="뒤로가기">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 6-6 6 6 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <div class="overlay-actions">
+            <button class="overlay-btn" type="button" id="share-btn" aria-label="공유하기">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="2.6"/><circle cx="6" cy="12" r="2.6"/><circle cx="18" cy="19" r="2.6"/><path d="m8.3 10.7 7.4-4.2M8.3 13.3l7.4 4.2" stroke-linecap="round"/></svg>
+            </button>
+            <button class="overlay-btn like-btn" type="button" id="like-btn" aria-label="찜하기">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 4.7a5.4 5.4 0 0 0-7.6 0L12 5.9l-1.2-1.2a5.4 5.4 0 0 0-7.6 7.6L12 21l8.8-8.7a5.4 5.4 0 0 0 0-7.6Z" stroke-linejoin="round"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="content">
+          <span class="type-chip" id="type-chip"></span>
+          <h1 class="description" id="description"></h1>
+
+          <p class="price-row" id="price-row"></p>
+
+          <div class="info-list">
+            <span id="address-line"></span>
+            <span id="contract-end-line"></span>
+            <span id="move-in-line"></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="bottom-bar" id="bottom-bar" hidden>
+        <button class="chat-button" type="button" id="chat-button">채팅하기</button>
+      </div>
+
+      <div class="lightbox" id="lightbox" hidden>
+        <div class="lightbox-track" id="lightbox-track"></div>
+        <span class="lightbox-counter" id="lightbox-counter"></span>
+        <button class="carousel-nav prev" type="button" id="lightbox-prev" aria-label="이전 사진" hidden>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 6-6 6 6 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <button class="carousel-nav next" type="button" id="lightbox-next" aria-label="다음 사진" hidden>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <button class="lightbox-close" type="button" id="lightbox-close" aria-label="닫기">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+    </main>
+    <script src="listing.js" defer></script>
+  </body>
+</html>

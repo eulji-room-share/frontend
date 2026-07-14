@@ -31,6 +31,7 @@ form.addEventListener('submit', async (event) => {
     username: document.querySelector('#username').value,
     password: document.querySelector('#password').value,
     name: document.querySelector('#name').value,
+    nickname: document.querySelector('#nickname').value,
   };
 
   // 백엔드 연동 지점 2/2: 회원가입 API 요청.

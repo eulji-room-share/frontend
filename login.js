@@ -66,7 +66,7 @@ form.addEventListener('submit', async (event) => {
 
     localStorage.setItem(
       AUTH_SESSION_KEY,
-      JSON.stringify({ username: matchedAccount.username, name: matchedAccount.name }),
+      JSON.stringify({ username: matchedAccount.username, name: matchedAccount.name, nickname: matchedAccount.nickname }),
     );
     window.location.href = 'home.html';
   }

@@ -31,11 +31,13 @@ document.querySelectorAll('.field label[for]').forEach((label) => {
   });
 });
 
-const contractEndInput = document.getElementById('contract-end');
-contractEndInput.addEventListener('click', () => {
-  if (typeof contractEndInput.showPicker === 'function') {
-    contractEndInput.showPicker();
-  }
+['contract-end', 'move-in-date'].forEach((id) => {
+  const dateInput = document.getElementById(id);
+  dateInput.addEventListener('click', () => {
+    if (typeof dateInput.showPicker === 'function') {
+      dateInput.showPicker();
+    }
+  });
 });
 
 const appRoot = document.querySelector('.app');
@@ -48,7 +50,10 @@ function goToStep(step) {
   appRoot.classList.toggle('no-topbar', String(step) === 'complete');
 }
 
+const step1Form = document.getElementById('step1-form');
+
 document.getElementById('step1-next').addEventListener('click', () => {
+  if (!step1Form.reportValidity()) return;
   goToStep(2);
 });
 
@@ -167,7 +172,7 @@ function fileToDataUrl(file) {
 }
 
 async function saveListing() {
-  const imageUrl = photos.length > 0 ? await fileToDataUrl(photos[0].file) : '';
+  const images = await Promise.all(photos.map((photo) => fileToDataUrl(photo.file)));
 
   const listing = {
     type: TYPE_CODE_MAP[document.getElementById('type').value] || 'ONE_ROOM',
@@ -175,8 +180,11 @@ async function saveListing() {
     deposit: Number(document.getElementById('deposit').value) || 0,
     monthlyRent: Number(document.getElementById('rent').value) || 0,
     contractEnd: document.getElementById('contract-end').value,
+    moveInDate: document.getElementById('move-in-date').value,
     description: document.getElementById('description').value,
-    imageUrl,
+    images,
+    // 홈 화면 카드 썸네일용 (첫 번째 사진).
+    imageUrl: images[0] || '',
     // 로그인한 사용자 정보를 매물에 붙입니다 (등록자 표시).
     ownerUsername: authSession ? authSession.username : null,
     ownerName: authSession ? authSession.name : null,

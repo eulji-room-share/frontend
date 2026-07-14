@@ -17,6 +17,10 @@ function formatContractEnd(listing) {
   return listing.contractEnd ? listing.contractEnd.replaceAll('-', '.') : '미정';
 }
 
+function formatMoveInDate(listing) {
+  return listing.moveInDate ? listing.moveInDate.replaceAll('-', '.') : '협의 가능';
+}
+
 function matchesType(listing) {
   return listing.type === activeType;
 }
@@ -42,7 +46,7 @@ function renderListings() {
         : '<div class="listing-image"></div>'}
       <div class="listing-body">
         <strong class="listing-title">${listing.description || '설명이 없는 매물이에요.'}</strong>
-        <p class="listing-price">${formatPrice(listing)}<br />${listing.address || '주소 미입력'}<br />계약 종료일 ${formatContractEnd(listing)}</p>
+        <p class="listing-price">${formatPrice(listing)}<br />${listing.address || '주소 미입력'}<br />계약 종료일 ${formatContractEnd(listing)}<br />입주 가능 시기 ${formatMoveInDate(listing)}</p>
       </div>
       <button class="more" type="button" aria-label="더보기">⋮</button>
       <div class="listing-actions">
@@ -87,16 +91,94 @@ typeButtons.forEach((button) => {
 
 searchInput.addEventListener('input', renderListings);
 
+const AUTH_SESSION_KEY = 'authSession';
+
 addButton.addEventListener('click', () => {
+  const isLoggedIn = !!localStorage.getItem(AUTH_SESSION_KEY);
+  if (!isLoggedIn) {
+    const wantsLogin = window.confirm('매물을 등록하려면 로그인이 필요해요. 로그인하시겠어요?');
+    if (wantsLogin) {
+      window.location.href = 'login.html';
+    }
+    return;
+  }
   window.location.href = 'upload.html';
 });
 
+const homeView = document.getElementById('home-view');
+const mypageView = document.getElementById('mypage-view');
+const navHomeButton = document.getElementById('nav-home');
+const navMypageButton = document.getElementById('nav-mypage');
+
+function showHomeView() {
+  homeView.hidden = false;
+  mypageView.hidden = true;
+  addButton.hidden = false;
+  navHomeButton.classList.add('active');
+  navMypageButton.classList.remove('active');
+}
+
+const authButton = document.getElementById('auth-btn');
+
+const LOGOUT_ROW_HTML = `
+  <svg class="row-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" stroke-linecap="round" stroke-linejoin="round"/><path d="M16 17l5-5-5-5M21 12H9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  <span>로그아웃</span>
+  <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+`;
+
+const LOGIN_ROW_HTML = `
+  <svg class="row-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 21h4a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-4" stroke-linecap="round" stroke-linejoin="round"/><path d="M11 17l5-5-5-5M16 12H3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  <span>로그인</span>
+  <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+`;
+
+function showMypageView() {
+  const session = JSON.parse(localStorage.getItem(AUTH_SESSION_KEY) || 'null');
+  document.getElementById('profile-nickname').textContent = session ? session.nickname || session.name || '회원' : '게스트';
+  authButton.innerHTML = session ? LOGOUT_ROW_HTML : LOGIN_ROW_HTML;
+
+  homeView.hidden = true;
+  mypageView.hidden = false;
+  addButton.hidden = true;
+  navHomeButton.classList.remove('active');
+  navMypageButton.classList.add('active');
+}
+
+navHomeButton.addEventListener('click', showHomeView);
+navMypageButton.addEventListener('click', showMypageView);
+
+authButton.addEventListener('click', () => {
+  const isLoggedIn = !!localStorage.getItem(AUTH_SESSION_KEY);
+  if (isLoggedIn) {
+    localStorage.removeItem(AUTH_SESSION_KEY);
+    window.location.href = 'start.html';
+  } else {
+    window.location.href = 'login.html';
+  }
+});
+
 listElement.addEventListener('click', (event) => {
-  const button = event.target.closest('.like-button');
-  if (!button) return;
-  const listing = listings.find((item) => String(item.id) === button.dataset.id);
-  listing.liked = !listing.liked;
-  renderListings();
+  const likeButton = event.target.closest('.like-button');
+  if (likeButton) {
+    const listing = listings.find((item) => String(item.id) === likeButton.dataset.id);
+    listing.liked = !listing.liked;
+
+    const storedListings = loadStoredListings();
+    const storedIndex = storedListings.findIndex((item) => String(item.id) === String(listing.id));
+    if (storedIndex !== -1) {
+      storedListings[storedIndex].liked = listing.liked;
+      localStorage.setItem(LISTINGS_STORAGE_KEY, JSON.stringify(storedListings));
+    }
+
+    renderListings();
+    return;
+  }
+
+  if (event.target.closest('.listing-actions') || event.target.closest('.more')) return;
+
+  const article = event.target.closest('.listing');
+  if (!article) return;
+  window.location.href = `listing.html?id=${article.dataset.id}`;
 });
 
 loadListings();

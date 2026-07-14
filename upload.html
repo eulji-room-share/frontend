@@ -119,7 +119,7 @@
 
         <h2 class="section-title">기본 정보</h2>
 
-        <form class="fields">
+        <form class="fields" id="step1-form">
           <div class="field">
             <label for="type">매물 종류</label>
             <select id="type" name="type">
@@ -132,13 +132,13 @@
 
           <div class="field">
             <label for="address">주소</label>
-            <input id="address" name="address" type="text" placeholder="주소를 입력하세요" />
+            <input id="address" name="address" type="text" placeholder="주소를 입력하세요" required />
           </div>
 
           <div class="field">
             <label for="deposit">보증금</label>
             <div class="amount-field">
-              <input id="deposit" name="deposit" type="number" inputmode="numeric" value="500" />
+              <input id="deposit" name="deposit" type="number" inputmode="numeric" placeholder="0" required />
               <span class="unit">만원</span>
             </div>
           </div>
@@ -146,14 +146,19 @@
           <div class="field">
             <label for="rent">월세</label>
             <div class="amount-field">
-              <input id="rent" name="rent" type="number" inputmode="numeric" value="40" />
+              <input id="rent" name="rent" type="number" inputmode="numeric" placeholder="0" required />
               <span class="unit">만원</span>
             </div>
           </div>
 
           <div class="field">
             <label for="contract-end">계약 종료일</label>
-            <input id="contract-end" name="contractEnd" type="date" />
+            <input id="contract-end" name="contractEnd" type="date" required />
+          </div>
+
+          <div class="field">
+            <label for="move-in-date">입주 가능 시기</label>
+            <input id="move-in-date" name="moveInDate" type="date" />
           </div>
         </form>
 
