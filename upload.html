@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- 백엔드 연동 지점 1/3: 매물 등록(POST) API 주소. home.html의 매물 목록(GET) API와 같은 주소를 씁니다. -->
+    <meta name="listings-api" content="/api/listings" />
+    <title>매물 등록 | 자취방 찾기</title>
+    <style>
+      :root { --blue: #1b63f0; --ink: #0b1730; --muted: #8fa0bd; --line: #edf0f5; --border: #dfe4ec; }
+      * { box-sizing: border-box; }
+      body { margin: 0; min-height: 100dvh; background: #fff; color: var(--ink); font-family: "Pretendard Variable", Pretendard, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif; }
+      button, input, select, textarea { font: inherit; }
+      button { border: 0; cursor: pointer; background: transparent; }
+      .app { width: min(100%, 480px); min-height: 100dvh; margin: 0 auto; padding: 18px 22px 28px; background: #fff; display: flex; flex-direction: column; }
+
+      .topbar { position: relative; display: flex; align-items: center; justify-content: center; height: 44px; flex: none; }
+      .topbar h1 { margin: 0; font-size: 18px; font-weight: 700; letter-spacing: -0.03em; }
+      .icon-btn { position: absolute; top: 50%; width: 40px; height: 40px; display: grid; place-items: center; color: var(--ink); transform: translateY(-50%); }
+      .icon-btn svg { width: 22px; height: 22px; fill: none; stroke: currentColor; }
+      .icon-btn.back { left: -8px; }
+      .icon-btn.close { right: -8px; }
+
+      .step-screen { display: none; flex-direction: column; flex: 1; min-height: 0; }
+      .step-screen.active { display: flex; }
+
+      .steps { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 28px 0 34px; flex: none; }
+      .step { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 50%; background: #eef1f5; color: #b7c0cf; font-size: 15px; font-weight: 700; border: 2px solid transparent; }
+      .step.active { background: #fff; border-color: var(--blue); color: var(--blue); }
+      .step.done { background: var(--blue); border-color: var(--blue); color: #fff; }
+      .step.done svg { width: 16px; height: 16px; fill: none; stroke: #fff; stroke-width: 3; }
+      .step-line { width: 56px; height: 2px; background: #eef1f5; }
+      .step-line.done { background: var(--blue); }
+
+      .section-title { margin: 0 0 22px; font-size: 19px; font-weight: 700; letter-spacing: -0.04em; flex: none; }
+
+      form.fields { flex: 1; }
+      .field textarea { width: 100%; min-height: clamp(260px, 42dvh, 400px); padding: 16px 18px; border: 1px solid var(--border); border-radius: 12px; font-size: 16px; font-weight: 500; line-height: 1.6; color: #000; background: #fff; outline: 0; resize: none; }
+      .field textarea:focus { border-color: var(--blue); }
+      .field textarea::placeholder { color: #b7c0cf; }
+      .field { margin-bottom: 22px; }
+      .field label { display: block; margin-bottom: 10px; font-size: 15px; font-weight: 600; }
+      .field select, .field input { width: 100%; height: 56px; padding: 0 18px; border: 1px solid var(--border); border-radius: 12px; font-size: 16px; color: var(--ink); background: #fff; outline: 0; }
+      .field select:focus, .field input:focus { border-color: var(--blue); }
+      .field input[type="date"] { cursor: pointer; }
+      .field select {
+        appearance: none;
+        -webkit-appearance: none;
+        padding-right: 44px;
+        background-repeat: no-repeat;
+        background-position: right 18px center;
+        background-size: 20px;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238fa0bd' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      }
+      .amount-field { position: relative; }
+      .amount-field input { text-align: right; padding-right: 56px; }
+      .amount-field input::-webkit-outer-spin-button,
+      .amount-field input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+      .amount-field input[type="number"] { -moz-appearance: textfield; }
+      .amount-field .unit { position: absolute; right: 18px; top: 50%; transform: translateY(-50%); color: var(--blue); font-size: 15px; font-weight: 600; }
+
+      .actions { flex: none; padding-top: 12px; }
+      .next-button { width: 100%; height: 58px; background: var(--blue); color: #fff; font-size: 17px; font-weight: 700; border-radius: 14px; }
+
+      .photo-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+      .photo-add-tile { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; border: 1px solid var(--border); border-radius: 12px; background: #fff; color: #9aa8c0; text-align: center; }
+      .photo-add-tile svg { fill: none; stroke: var(--muted); stroke-width: 2; }
+      .photo-add-tile:disabled { opacity: .4; cursor: not-allowed; }
+
+      .photo-grid.empty { grid-template-columns: 1fr; }
+      .photo-grid.empty .photo-add-tile { min-height: clamp(260px, 40dvh, 380px); gap: 14px; }
+      .photo-grid.empty .photo-add-tile svg { width: 44px; height: 44px; stroke-width: 1.5; }
+      .photo-grid.empty .photo-add-tile strong { font-size: 16px; font-weight: 700; color: #9aa8c0; }
+      .photo-grid.empty .photo-add-tile span { font-size: 14px; color: #b7c0cf; }
+
+      .photo-grid:not(.empty) .photo-add-tile { aspect-ratio: 1; font-size: 13px; font-weight: 600; }
+      .photo-grid:not(.empty) .photo-add-tile svg { width: 24px; height: 24px; }
+
+      .photo-thumb { position: relative; aspect-ratio: 1; border-radius: 12px; overflow: hidden; background: #eef1f5; }
+      .photo-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+      .photo-remove { position: absolute; top: 6px; right: 6px; width: 22px; height: 22px; display: grid; place-items: center; border-radius: 50%; background: rgba(11, 23, 48, .55); color: #fff; }
+      .photo-remove svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 2.4; }
+
+      .tip { margin: 18px 0 0; color: #b7c0cf; font-size: 14px; line-height: 1.6; text-align: center; }
+
+      .app.no-topbar .topbar { display: none; }
+
+      .complete-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 24px; text-align: center; }
+      .complete-icon { width: 130px; height: 130px; display: grid; place-items: center; border-radius: 50%; background: linear-gradient(135deg, #3a8bff, var(--blue)); }
+      .complete-icon svg { width: 58px; height: 58px; fill: none; stroke: #fff; stroke-width: 3; }
+      .complete-title { margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -0.04em; }
+      .complete-subtitle { margin: 0; color: #b7c0cf; font-size: 16px; line-height: 1.6; }
+
+      .backend-note { flex: none; margin: 18px 0 0; padding: 14px 16px; border: 1px dashed var(--border); border-radius: 10px; color: var(--muted); font-size: 13px; line-height: 1.7; }
+      .backend-note strong { display: block; margin-bottom: 4px; color: var(--ink); }
+      .backend-note code { color: var(--ink); background: var(--line); padding: 1px 5px; border-radius: 4px; }
+    </style>
+  </head>
+  <body>
+    <main class="app">
+      <header class="topbar">
+        <button class="icon-btn back" type="button" id="back-btn" aria-label="뒤로가기">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 6-6 6 6 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <h1>매물 등록</h1>
+        <button class="icon-btn close" type="button" data-nav="home" aria-label="닫기">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" stroke-linecap="round"/></svg>
+        </button>
+      </header>
+
+      <section class="step-screen active" data-step="1">
+        <nav class="steps" aria-label="등록 단계">
+          <span class="step active" aria-current="step">1</span>
+          <span class="step-line"></span>
+          <span class="step">2</span>
+          <span class="step-line"></span>
+          <span class="step">3</span>
+        </nav>
+
+        <h2 class="section-title">기본 정보</h2>
+
+        <form class="fields">
+          <div class="field">
+            <label for="type">매물 종류</label>
+            <select id="type" name="type">
+              <option>원룸</option>
+              <option>투룸</option>
+              <option>오피스텔</option>
+              <option>쉐어하우스</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="address">주소</label>
+            <input id="address" name="address" type="text" placeholder="주소를 입력하세요" />
+          </div>
+
+          <div class="field">
+            <label for="deposit">보증금</label>
+            <div class="amount-field">
+              <input id="deposit" name="deposit" type="number" inputmode="numeric" value="500" />
+              <span class="unit">만원</span>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="rent">월세</label>
+            <div class="amount-field">
+              <input id="rent" name="rent" type="number" inputmode="numeric" value="40" />
+              <span class="unit">만원</span>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="contract-end">계약 종료일</label>
+            <input id="contract-end" name="contractEnd" type="date" />
+          </div>
+        </form>
+
+        <div class="actions">
+          <button class="next-button" type="button" id="step1-next">다음</button>
+        </div>
+      </section>
+
+      <section class="step-screen" data-step="2">
+        <nav class="steps" aria-label="등록 단계">
+          <span class="step done" aria-hidden="true">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+          <span class="step-line done"></span>
+          <span class="step active" aria-current="step">2</span>
+          <span class="step-line"></span>
+          <span class="step">3</span>
+        </nav>
+
+        <h2 class="section-title">상세 정보</h2>
+
+        <form class="fields">
+          <div class="field">
+            <label for="description">매물 설명</label>
+            <textarea id="description" name="description" placeholder="등록하려는 매물의 자세한 정보를 써주세요."></textarea>
+          </div>
+        </form>
+
+        <div class="actions">
+          <button class="next-button" type="button" id="step2-next">다음</button>
+        </div>
+      </section>
+
+      <section class="step-screen" data-step="3">
+        <nav class="steps" aria-label="등록 단계">
+          <span class="step done" aria-hidden="true">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+          <span class="step-line done"></span>
+          <span class="step done" aria-hidden="true">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+          <span class="step-line done"></span>
+          <span class="step active" aria-current="step">3</span>
+        </nav>
+
+        <h2 class="section-title">사진 등록</h2>
+
+        <div class="field">
+          <label for="photo-add-tile">매물 설명</label>
+          <input type="file" id="photo-input" accept="image/*" multiple hidden />
+
+          <div class="photo-grid empty" id="photo-grid">
+            <button class="photo-add-tile" type="button" id="photo-add-tile"></button>
+          </div>
+        </div>
+
+        <p class="tip">Tip. 다양한 각도의 사진을 올리면<br />더 많은 관심을 받을 수 있어요!</p>
+
+        <div class="actions">
+          <button class="next-button" type="button" id="step3-next">등록 완료</button>
+        </div>
+      </section>
+
+      <section class="step-screen" data-step="complete">
+        <div class="complete-wrap">
+          <div class="complete-icon">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 13l5 5L19 8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <h2 class="complete-title">매물 등록이 완료되었습니다!</h2>
+          <p class="complete-subtitle">등록한 매물은 검토 후<br />노출될 예정입니다.</p>
+        </div>
+
+        <div class="actions">
+          <button class="next-button" type="button" id="complete-confirm">확인</button>
+        </div>
+      </section>
+
+      <p class="backend-note">
+        <strong>백엔드 연동 안내</strong>
+        1) 이 파일 상단 <code>&lt;meta name="listings-api"&gt;</code>의 <code>content</code>를 실제 매물 API 주소로 바꾸세요. (홈 화면 목록 조회 GET과 같은 주소를 매물 등록 POST에도 사용합니다.)<br />
+        2) <code>upload.js</code> 안의 <code>// 백엔드 연동 지점 2/3</code>, <code>// 백엔드 연동 지점 3/3</code> 표시된 부분에서 요청/응답 형식을 백엔드 스펙에 맞게 수정하세요.<br />
+        3) 매물 등록은 로그인한 사용자만 가능해야 합니다. 로그인 시 저장된 토큰을 Authorization 헤더로 실어 보내고, 서버에서도 비로그인 요청은 401로 막아주세요. 지금은 로그인하지 않은 상태로 이 페이지에 들어오면 자동으로 <code>login.html</code>로 이동합니다.
+      </p>
+    </main>
+    <script src="upload.js" defer></script>
+  </body>
+</html>

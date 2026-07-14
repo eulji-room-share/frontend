@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- 백엔드 연동 지점 1/2: 로그인 API 주소. 실제 백엔드 주소로 교체하세요. -->
+    <meta name="login-api" content="/api/auth/login" />
+    <title>로그인 | 자취방 찾기</title>
+    <style>
+      :root { --blue: #1b63f0; --ink: #0b1730; --muted: #8fa0bd; --line: #edf0f5; --border: #dfe4ec; }
+      * { box-sizing: border-box; }
+      body { margin: 0; min-height: 100dvh; background: #fff; color: var(--ink); font-family: "Pretendard Variable", Pretendard, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif; }
+      button, input { font: inherit; }
+      button { border: 0; cursor: pointer; background: transparent; }
+      .app { width: min(100%, 480px); min-height: 100dvh; margin: 0 auto; padding: 40px 22px 28px; background: #fff; display: flex; flex-direction: column; }
+
+      .back-button { width: 40px; height: 40px; margin: 0 0 16px -8px; display: grid; place-items: center; color: var(--ink); }
+      .back-button svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; }
+
+      h1 { margin: 0 0 8px; font-size: 24px; font-weight: 700; letter-spacing: -0.04em; }
+      .subtitle { margin: 0 0 32px; color: var(--muted); font-size: 15px; line-height: 1.5; }
+
+      .error-message { margin: 0 0 20px; padding: 12px 14px; border-radius: 10px; background: #fdeceb; color: #c23b2f; font-size: 14px; }
+
+      .field { margin-bottom: 20px; }
+      .field label { display: block; margin-bottom: 8px; font-size: 14px; font-weight: 600; }
+      .field input { width: 100%; height: 54px; padding: 0 16px; border: 1px solid var(--border); border-radius: 12px; font-size: 16px; color: var(--ink); background: #fff; outline: 0; }
+      .field input:focus { border-color: var(--blue); }
+
+      .submit-button { margin-top: 8px; width: 100%; height: 56px; background: var(--blue); color: #fff; font-size: 16px; font-weight: 700; border-radius: 12px; }
+
+      .signup-row { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 18px; font-size: 14px; color: var(--muted); }
+      .signup-button { color: var(--blue); font-weight: 700; text-decoration: underline; }
+
+      .backend-note { margin-top: 28px; padding: 14px 16px; border: 1px dashed var(--border); border-radius: 10px; color: var(--muted); font-size: 13px; line-height: 1.7; }
+      .backend-note strong { display: block; margin-bottom: 4px; color: var(--ink); }
+      .backend-note code { color: var(--ink); background: var(--line); padding: 1px 5px; border-radius: 4px; }
+    </style>
+  </head>
+  <body>
+    <main class="app">
+      <button class="back-button" type="button" id="back-btn" aria-label="뒤로가기">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 6-6 6 6 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <h1>로그인</h1>
+      <p class="subtitle">가입하신 아이디와 비밀번호로<br />로그인해주세요.</p>
+
+      <p class="error-message" id="error-message" hidden></p>
+
+      <form id="login-form">
+        <div class="field">
+          <label for="username">아이디</label>
+          <input id="username" name="username" type="text" autocomplete="username" placeholder="아이디를 입력하세요" required />
+        </div>
+
+        <div class="field">
+          <label for="password">비밀번호</label>
+          <input id="password" name="password" type="password" autocomplete="current-password" placeholder="비밀번호를 입력하세요" required />
+        </div>
+
+        <button class="submit-button" type="submit">로그인</button>
+      </form>
+
+      <p class="signup-row">
+        아직 회원이 아니신가요?
+        <button class="signup-button" type="button" id="go-signup">회원가입</button>
+      </p>
+
+      <p class="backend-note">
+        <strong>백엔드 연동 안내</strong>
+        1) 이 파일 상단 <code>&lt;meta name="login-api"&gt;</code>의 <code>content</code>를 실제 로그인 API 주소로 바꾸세요.<br />
+        2) <code>login.js</code> 안의 <code>// 백엔드 연동 지점 2/2</code> 표시된 <code>fetch(...)</code> 블록에서 요청/응답 형식을 백엔드 스펙에 맞게 수정하세요.<br />
+        3) 서버 쪽에서 <code>SignUp.html</code>로 가입 완료된 계정만 로그인 성공(200) 처리하고, 미가입 아이디는 401/404 등으로 응답해 주세요.<br />
+        4) 로그인 성공 응답에 토큰/사용자 정보를 담아 내려주면, <code>login.js</code>가 <code>localStorage</code>의 <code>authSession</code>에 저장합니다. <code>upload.js</code>가 매물 등록 시 이 값을 읽어 "누가 등록했는지" 매물에 붙입니다. 지금은 백엔드가 없어 아이디/비밀번호를 로컬에 임시 저장해 회원가입된 사용자만 로그인되도록 흉내 내고 있어요(<code>localAccounts</code>). 실제 백엔드가 연결되면 이 로컬 저장 로직은 삭제하면 됩니다.
+      </p>
+    </main>
+    <script src="login.js" defer></script>
+  </body>
+</html>
