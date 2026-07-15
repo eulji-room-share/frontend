@@ -69,45 +69,60 @@ function renderListings(listings) {
     .join('');
 }
 
-// 백엔드 연동 지점 2/3: 내가 등록한 매물 조회 API.
-// 로그인한 사용자 본인의 매물만 내려주는 인증 필요 엔드포인트를 쓰는 걸 권장합니다
-// (예: GET /api/listings/mine + Authorization 헤더에 authSession.token).
-// 지금은 백엔드가 없어 localStorage에 저장된 전체 매물 중 ownerUsername이
-// 로그인한 사용자와 같은 것만 걸러서 보여줍니다.
+
+// 1. 내 매물 조회 (전체 조회 후 이메일로 필터링)
 async function loadMyListings() {
   try {
-    const response = await fetch(`${apiUrl}?ownerUsername=${encodeURIComponent(authSession.username)}`, {
-      headers: authSession.token ? { Authorization: `Bearer ${authSession.token}` } : {},
+    // [Step 1] 내 정보 조회 API로 내 이메일 가져오기
+    const meRes = await fetch('http://localhost:8080/api/users/me', {
+      headers: { Authorization: `Bearer ${authSession.token}` }
     });
-    if (!response.ok) throw new Error('내 매물 조회 실패');
-    const listings = await response.json();
-    renderListings(listings);
-  } catch (error) {
-    const myListings = loadStoredListings().filter((listing) => listing.ownerUsername === authSession.username);
+    if (!meRes.ok) throw new Error('내 정보 조회 실패');
+    const myInfo = await meRes.json();
+
+    // [Step 2] 전체 매물 조회 API로 세상의 모든 방 다 가져오기
+    const res = await fetch('http://localhost:8080/api/room-posts');
+    if (!res.ok) throw new Error('전체 매물 조회 실패');
+    const allPosts = await res.json();
+
+    // [Step 3] 철희님의 sellerEmail과 유저 이메일 비교..
+    const myListings = allPosts
+      .filter(post => post.sellerEmail === myInfo.email) 
+      .map(post => ({
+        id: post.id,
+        type: 'ONE_ROOM',
+        address: post.location,
+        deposit: post.deposit,
+        monthlyRent: post.monthlyRent,
+        contractEnd: post.contractEndDate,
+        moveInDate: post.moveInDate,
+        description: post.content,
+        imageUrl: post.imageUrl || '',
+        createdAt: new Date(post.createdAt).getTime() || Date.now()
+      }));
+
     renderListings(myListings);
+  } catch (error) {
+    console.error('[MyPost] 내 매물 불러오기 에러:', error);
+    listElement.innerHTML = '<p class="empty">매물을 불러오는 중 오류가 발생했어요.</p>';
   }
 }
 
-// 백엔드 연동 지점 3/3: 매물 삭제 API.
-// 실제로는 DELETE {listings-api 주소}/{매물 id} 형태의 인증 필요 엔드포인트를 호출하고,
-// authSession.token을 Authorization 헤더로 실어 보내세요. 본인 소유가 아닌 매물의
-// 삭제 요청은 서버에서 403으로 막아야 합니다. 아래 catch의 localStorage 삭제 로직은
-// 백엔드 연동 후 지우면 됩니다.
+// 2. 매물 삭제 API 연동
 async function deleteListing(id) {
   try {
-    const response = await fetch(`${apiUrl}/${id}`, {
+    const response = await fetch(`http://localhost:8080/api/room-posts/${id}`, {
       method: 'DELETE',
-      headers: authSession.token ? { Authorization: `Bearer ${authSession.token}` } : {},
+      headers: { Authorization: `Bearer ${authSession.token}` },
     });
+    
     if (!response.ok) throw new Error('매물 삭제 요청 실패');
+    alert('매물이 성공적으로 삭제되었어!');
+    
   } catch (error) {
-    console.log('[MyPost] 백엔드 미연동 상태 - 로컬 저장소에서만 삭제:', error);
+    console.error('[MyPost] 삭제 에러:', error);
+    alert('삭제 중 오류가 발생했어.');
   }
-
-  // 백엔드 삭제 성공 여부와 무관하게 로컬 캐시에서도 지워서, 새로고침 전에도
-  // 화면과 다음 조회 결과가 어긋나지 않도록 맞춰둡니다.
-  const remaining = loadStoredListings().filter((listing) => String(listing.id) !== String(id));
-  localStorage.setItem(LISTINGS_STORAGE_KEY, JSON.stringify(remaining));
 }
 
 listElement.addEventListener('click', async (event) => {

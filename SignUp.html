@@ -3,8 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <!-- 백엔드 연동 지점 1/2: 회원가입 API 주소. 실제 백엔드 주소로 교체하세요. -->
-    <meta name="signup-api" content="/api/auth/signup" />
+    <meta name="signup-api" content="http://localhost:8080/api/users/join" />
     <title>회원가입 | 자취방 찾기</title>
     <style>
       :root { --blue: #1b63f0; --ink: #0b1730; --muted: #8fa0bd; --line: #edf0f5; --border: #dfe4ec; }
@@ -46,18 +45,13 @@
 
       <form id="signup-form">
         <div class="field">
-          <label for="username">아이디</label>
-          <input id="username" name="username" type="text" autocomplete="username" placeholder="아이디를 입력하세요" required />
+          <label for="username">이메일</label>
+          <input id="username" type="email" placeholder="이메일 주소를 입력하세요" required />
         </div>
 
         <div class="field">
           <label for="password">비밀번호</label>
           <input id="password" name="password" type="password" autocomplete="new-password" placeholder="비밀번호를 입력하세요" required />
-        </div>
-
-        <div class="field">
-          <label for="name">이름</label>
-          <input id="name" name="name" type="text" autocomplete="name" placeholder="이름을 입력하세요" required />
         </div>
 
         <div class="field">

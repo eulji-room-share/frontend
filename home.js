@@ -95,17 +95,31 @@ function loadStoredListings() {
   }
 }
 
-// 백엔드 연동 지점 2/2: 매물 목록 조회 API 요청.
-// 로그인 여부와 무관하게 호출되는 공개 API입니다 (Authorization 헤더를 붙이지 마세요).
-// 응답 형식이 배열이 아니라면(예: { items: [...] } 같은 래핑) 아래 listings 할당부를 맞게 수정하세요.
-// 지금은 백엔드가 없어 실패 시 upload.js가 저장해 둔 localStorage 값으로 대체합니다.
 async function loadListings() {
   try {
+    // 백엔드 전체 목록 조회 API 호출
     const response = await fetch(apiUrl);
     if (!response.ok) throw new Error('매물 목록 요청 실패');
-    listings = await response.json();
+    
+    const backendData = await response.json();
+
+    // 백엔드 DTO(RoomPostResponse)를 프론트엔드와 맵핑..
+    listings = backendData.map(post => ({
+      id: post.id,
+      type: 'ONE_ROOM', // 백엔드에 방 종류 필드가 없다면 기본값 고정
+      address: post.location,         // 백엔드의 location -> 프론트의 address
+      deposit: post.deposit,
+      monthlyRent: post.monthlyRent,
+      contractEnd: post.contractEndDate, // 백엔드의 contractEndDate -> contractEnd
+      moveInDate: post.moveInDate,
+      description: post.content,      // 백엔드의 content -> description
+      imageUrl: post.imageUrl || '',
+      createdAt: new Date(post.createdAt).getTime() || Date.now() // 정렬용 시간
+    }));
+
   } catch (error) {
-    listings = loadStoredListings();
+    console.error('[Home] 백엔드 연동 에러:', error);
+    listings = loadStoredListings(); // 실패 시 로컬 임시 데이터 사용
   }
   renderListings();
 }
@@ -240,10 +254,33 @@ const LOGIN_ROW_HTML = `
   <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
 `;
 
-function showMypageView() {
+// async를 붙여서 백엔드 통신을 기다리도록...
+async function showMypageView() {
   const session = JSON.parse(localStorage.getItem(AUTH_SESSION_KEY) || 'null');
-  document.getElementById('profile-nickname').textContent = session ? session.nickname || session.name || '회원' : '게스트';
-  authButton.innerHTML = session ? LOGOUT_ROW_HTML : LOGIN_ROW_HTML;
+  const token = session ? session.token : null;
+  
+  let nickname = '게스트';
+  let isLoggedIn = !!token;
+
+  // 토큰이 있다면 백엔드에서 내 정보 받기
+  if (isLoggedIn) {
+    try {
+      const res = await fetch('http://localhost:8080/api/users/me', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const myInfo = await res.json();
+        nickname = myInfo.nickname || '회원'; // 백엔드에서 받은 닉네임 적용
+      } else {
+        isLoggedIn = false; // 토큰이 만료되었거나 이상하면 로그아웃 처리
+      }
+    } catch(e) {
+      console.error('[Mypage] 내 정보 불러오기 에러', e);
+    }
+  }
+
+  document.getElementById('profile-nickname').textContent = nickname;
+  authButton.innerHTML = isLoggedIn ? LOGOUT_ROW_HTML : LOGIN_ROW_HTML;
 
   homeView.hidden = true;
   mypageView.hidden = false;
@@ -266,12 +303,29 @@ document.getElementById('nav-chat').addEventListener('click', () => {
   alert('채팅 기능은 준비 중이에요.');
 });
 
-authButton.addEventListener('click', () => {
-  const isLoggedIn = !!localStorage.getItem(AUTH_SESSION_KEY);
-  if (isLoggedIn) {
+authButton.addEventListener('click', async () => {
+  const session = JSON.parse(localStorage.getItem(AUTH_SESSION_KEY) || 'null');
+  
+  // 1. 이미 로그인된 상태라면 (토큰이 있다면)
+  if (session && session.token) {
+    try {
+      // 백엔드 로그아웃 API 호출
+      await fetch('http://localhost:8080/api/users/logout', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${session.token}` }
+      });
+    } catch (error) {
+      console.error('[Logout] 백엔드 로그아웃 처리 중 에러:', error);
+    }
+    
+    // 2. 서버 호출이 끝난 뒤에 브라우저의 토큰 파기..
     localStorage.removeItem(AUTH_SESSION_KEY);
-    window.location.href = 'index.html';
-  } else {
+    
+    // 3. 로그아웃 완료 후 메인 진입 화면으로 이동
+    window.location.href = 'index.html'; // 또는 첫 화면인 login.html
+  } 
+  // 로그인 안 된 상태에서 눌렀을 때는 바로 로그인 화면으로
+  else {
     window.location.href = 'login.html';
   }
 });

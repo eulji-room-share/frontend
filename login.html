@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <!-- 백엔드 연동 지점 1/2: 로그인 API 주소. 실제 백엔드 주소로 교체하세요. -->
-    <meta name="login-api" content="/api/auth/login" />
+    <meta name="login-api" content="http://localhost:8080/api/users/login" />
     <title>로그인 | 자취방 찾기</title>
     <style>
       :root { --blue: #1b63f0; --ink: #0b1730; --muted: #8fa0bd; --line: #edf0f5; --border: #dfe4ec; }
@@ -49,8 +49,8 @@
 
       <form id="login-form">
         <div class="field">
-          <label for="username">아이디</label>
-          <input id="username" name="username" type="text" autocomplete="username" placeholder="아이디를 입력하세요" required />
+          <label for="username">이메일</label>
+          <input id="username" type="email" placeholder="이메일을 입력하세요" required />
         </div>
 
         <div class="field">
