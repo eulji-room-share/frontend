@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- 백엔드 연동 지점 1/3: 매물 목록/삭제 API 주소. home.html/upload.html과 같은 주소를 씁니다.
+         GET {주소}?ownerUsername=... → 내 매물 조회, DELETE {주소}/{id} → 매물 삭제 -->
+    <meta name="listings-api" content="/api/listings" />
+    <title>내가 등록한 매물 | 자취방 찾기</title>
+    <style>
+      :root { --blue: #1b63f0; --ink: #0b1730; --muted: #8fa0bd; --line: #edf0f5; }
+      * { box-sizing: border-box; }
+      body { margin: 0; min-height: 100dvh; background: #fff; color: var(--ink); font-family: "Pretendard Variable", Pretendard, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif; }
+      button { border: 0; cursor: pointer; background: transparent; font: inherit; }
+      .app { width: min(100%, 480px); min-height: 100dvh; margin: 0 auto; padding: 18px 22px 40px; background: #fff; }
+
+      .topbar { position: relative; display: flex; align-items: center; justify-content: center; height: 44px; }
+      .topbar h1 { margin: 0; font-size: 18px; font-weight: 700; letter-spacing: -0.03em; }
+      .back-btn { position: absolute; left: -8px; top: 50%; transform: translateY(-50%); width: 40px; height: 40px; display: grid; place-items: center; color: var(--ink); }
+      .back-btn svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; }
+
+      .listing-list { margin-top: 28px; display: grid; gap: 26px; }
+      .listing { position: relative; display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 17px; min-height: 150px; }
+      .listing-image { width: 150px; height: 150px; overflow: hidden; border-radius: 13px; background: #e8eef9; }
+      .listing-image img { width: 100%; height: 100%; object-fit: cover; display: block; }
+      .listing-body { min-width: 0; padding: 3px 36px 0 0; }
+      .listing-title { display: block; overflow: hidden; font-size: 16px; line-height: 1.3; font-weight: 700; letter-spacing: -0.07em; text-overflow: ellipsis; white-space: nowrap; }
+      .listing-price { margin: 9px 0 0; color: var(--muted); font-size: 13px; line-height: 1.5; letter-spacing: -0.04em; }
+      .listing-delete { position: absolute; top: 3px; right: 0; width: 30px; height: 30px; display: grid; place-items: center; color: #b5bccb; border-radius: 8px; }
+      .listing-delete:hover { color: #ef4444; }
+      .listing-delete svg { width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width: 1.8; }
+
+      .empty { padding: 100px 0; color: var(--muted); text-align: center; font-size: 15px; line-height: 1.6; }
+    </style>
+  </head>
+  <body>
+    <main class="app">
+      <header class="topbar">
+        <button class="back-btn" type="button" id="back-btn" aria-label="뒤로가기">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 6-6 6 6 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <h1>내가 등록한 매물</h1>
+      </header>
+
+      <section id="listing-list" class="listing-list" aria-live="polite"></section>
+    </main>
+    <script src="MyPost.js" defer></script>
+  </body>
+</html>

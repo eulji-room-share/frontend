@@ -209,6 +209,10 @@ addButton.addEventListener('click', () => {
   window.location.href = 'upload.html';
 });
 
+document.getElementById('mypage-my-listings').addEventListener('click', () => {
+  window.location.href = 'MyPost.html';
+});
+
 const homeView = document.getElementById('home-view');
 const mypageView = document.getElementById('mypage-view');
 const navHomeButton = document.getElementById('nav-home');
@@ -250,6 +254,13 @@ function showMypageView() {
 
 navHomeButton.addEventListener('click', showHomeView);
 navMypageButton.addEventListener('click', showMypageView);
+
+// MyPost.html 등 다른 화면에서 "마이페이지로 돌아가기"로 넘어온 경우, 홈 목록 대신
+// 마이페이지를 바로 보여줍니다.
+if (new URLSearchParams(location.search).get('view') === 'mypage') {
+  showMypageView();
+  history.replaceState(null, '', 'home.html');
+}
 
 document.getElementById('nav-chat').addEventListener('click', () => {
   alert('채팅 기능은 준비 중이에요.');
