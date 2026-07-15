@@ -57,7 +57,11 @@ function matchesKeyword(listing, keyword) {
 
 function renderListings() {
   const keyword = searchInput.value.trim().toLowerCase();
-  const visibleListings = listings.filter((listing) => matchesFilters(listing) && matchesKeyword(listing, keyword));
+  const visibleListings = listings
+    .filter((listing) => matchesFilters(listing) && matchesKeyword(listing, keyword))
+    // 최근 등록한 매물이 위로 오도록 정렬합니다. createdAt이 없는 데이터(예: 실제
+    // 백엔드 응답에 아직 이 필드가 없는 경우)는 순서를 그대로 유지합니다.
+    .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
 
   if (!visibleListings.length) {
     listElement.innerHTML = '<p class="empty">조건에 맞는 매물이 없어요.</p>';

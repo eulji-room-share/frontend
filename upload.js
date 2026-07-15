@@ -207,6 +207,8 @@ async function saveListing() {
     description: document.getElementById('description').value,
     images: [],
     imageUrl: '',
+    // 홈 화면에서 "최근 등록순"으로 정렬하는 데 씁니다.
+    createdAt: Date.now(),
     // 로그인한 사용자 정보를 매물에 붙입니다 (등록자 표시).
     ownerUsername: authSession ? authSession.username : null,
     ownerName: authSession ? authSession.name : null,
