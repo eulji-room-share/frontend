@@ -1,13 +1,22 @@
 const apiUrl = document.querySelector('meta[name="listings-api"]').content;
 const listElement = document.querySelector('#listing-list');
 const searchInput = document.querySelector('#search-input');
-const typeButtons = document.querySelectorAll('.chip');
 const addButton = document.querySelector('.add-button');
 
 const LISTINGS_STORAGE_KEY = 'registeredListings';
 
-let activeType = 'ONE_ROOM';
 let listings = [];
+
+let filters = {
+  type: 'ALL',
+  location: '',
+  rentMin: null,
+  rentMax: null,
+  moveInFrom: '',
+  moveInTo: '',
+  contractEndFrom: '',
+  contractEndTo: '',
+};
 
 function formatPrice(listing) {
   return `보증금 ${listing.deposit}만원 · 월세 ${listing.monthlyRent}만원`;
@@ -21,8 +30,24 @@ function formatMoveInDate(listing) {
   return listing.moveInDate ? listing.moveInDate.replaceAll('-', '.') : '협의 가능';
 }
 
-function matchesType(listing) {
-  return listing.type === activeType;
+function matchesFilters(listing) {
+  if (filters.type !== 'ALL' && listing.type !== filters.type) return false;
+
+  if (filters.location) {
+    const address = (listing.address || '').toLowerCase();
+    if (!address.includes(filters.location.toLowerCase())) return false;
+  }
+
+  if (filters.rentMin !== null && listing.monthlyRent < filters.rentMin) return false;
+  if (filters.rentMax !== null && listing.monthlyRent > filters.rentMax) return false;
+
+  if (filters.moveInFrom && listing.moveInDate && listing.moveInDate < filters.moveInFrom) return false;
+  if (filters.moveInTo && listing.moveInDate && listing.moveInDate > filters.moveInTo) return false;
+
+  if (filters.contractEndFrom && listing.contractEnd && listing.contractEnd < filters.contractEndFrom) return false;
+  if (filters.contractEndTo && listing.contractEnd && listing.contractEnd > filters.contractEndTo) return false;
+
+  return true;
 }
 
 function matchesKeyword(listing, keyword) {
@@ -32,7 +57,7 @@ function matchesKeyword(listing, keyword) {
 
 function renderListings() {
   const keyword = searchInput.value.trim().toLowerCase();
-  const visibleListings = listings.filter((listing) => matchesType(listing) && matchesKeyword(listing, keyword));
+  const visibleListings = listings.filter((listing) => matchesFilters(listing) && matchesKeyword(listing, keyword));
 
   if (!visibleListings.length) {
     listElement.innerHTML = '<p class="empty">조건에 맞는 매물이 없어요.</p>';
@@ -81,15 +106,90 @@ async function loadListings() {
   renderListings();
 }
 
-typeButtons.forEach((button) => {
-  button.addEventListener('click', () => {
-    activeType = button.dataset.type;
-    typeButtons.forEach((chip) => chip.classList.toggle('active', chip === button));
-    renderListings();
+searchInput.addEventListener('input', renderListings);
+
+document.querySelectorAll('.filter-field label[for]').forEach((label) => {
+  label.addEventListener('click', (event) => {
+    event.preventDefault();
   });
 });
 
-searchInput.addEventListener('input', renderListings);
+const filterToggleButton = document.getElementById('filter-toggle');
+const filterPanel = document.getElementById('filter-panel');
+
+filterToggleButton.addEventListener('click', () => {
+  const isOpen = filterPanel.classList.toggle('open');
+  filterToggleButton.setAttribute('aria-expanded', String(isOpen));
+});
+
+const filterTypeButtons = document.querySelectorAll('#filter-type-group .chip');
+let selectedFilterType = 'ALL';
+
+filterTypeButtons.forEach((button) => {
+  button.addEventListener('click', () => {
+    selectedFilterType = button.dataset.type;
+    filterTypeButtons.forEach((chip) => chip.classList.toggle('active', chip === button));
+  });
+});
+
+['filter-movein-from', 'filter-movein-to', 'filter-contractend-from', 'filter-contractend-to'].forEach((id) => {
+  const dateInput = document.getElementById(id);
+  dateInput.addEventListener('click', () => {
+    if (typeof dateInput.showPicker === 'function') dateInput.showPicker();
+  });
+});
+
+document.getElementById('filter-apply').addEventListener('click', () => {
+  const rentMinValue = document.getElementById('filter-rent-min').value;
+  const rentMaxValue = document.getElementById('filter-rent-max').value;
+
+  filters = {
+    type: selectedFilterType,
+    location: document.getElementById('filter-location').value.trim(),
+    rentMin: rentMinValue ? Number(rentMinValue) : null,
+    rentMax: rentMaxValue ? Number(rentMaxValue) : null,
+    moveInFrom: document.getElementById('filter-movein-from').value,
+    moveInTo: document.getElementById('filter-movein-to').value,
+    contractEndFrom: document.getElementById('filter-contractend-from').value,
+    contractEndTo: document.getElementById('filter-contractend-to').value,
+  };
+
+  filterPanel.classList.remove('open');
+  filterToggleButton.setAttribute('aria-expanded', 'false');
+  renderListings();
+});
+
+const FILTER_INPUT_IDS = [
+  'filter-location',
+  'filter-rent-min',
+  'filter-rent-max',
+  'filter-movein-from',
+  'filter-movein-to',
+  'filter-contractend-from',
+  'filter-contractend-to',
+];
+
+document.getElementById('filter-reset').addEventListener('click', () => {
+  FILTER_INPUT_IDS.forEach((id) => {
+    document.getElementById(id).value = '';
+  });
+
+  selectedFilterType = 'ALL';
+  filterTypeButtons.forEach((chip) => chip.classList.toggle('active', chip.dataset.type === 'ALL'));
+
+  filters = {
+    type: 'ALL',
+    location: '',
+    rentMin: null,
+    rentMax: null,
+    moveInFrom: '',
+    moveInTo: '',
+    contractEndFrom: '',
+    contractEndTo: '',
+  };
+
+  renderListings();
+});
 
 const AUTH_SESSION_KEY = 'authSession';
 
@@ -147,11 +247,15 @@ function showMypageView() {
 navHomeButton.addEventListener('click', showHomeView);
 navMypageButton.addEventListener('click', showMypageView);
 
+document.getElementById('nav-chat').addEventListener('click', () => {
+  alert('채팅 기능은 준비 중이에요.');
+});
+
 authButton.addEventListener('click', () => {
   const isLoggedIn = !!localStorage.getItem(AUTH_SESSION_KEY);
   if (isLoggedIn) {
     localStorage.removeItem(AUTH_SESSION_KEY);
-    window.location.href = 'start.html';
+    window.location.href = 'index.html';
   } else {
     window.location.href = 'login.html';
   }
