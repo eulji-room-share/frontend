@@ -363,3 +363,80 @@ listElement.addEventListener('click', (event) => {
 });
 
 loadListings();
+
+// home.js 맨 아래에 붙여넣을 백엔드 연동 코드
+async function fetchRoomPosts() {
+  try {
+    // 1. 로그인 세션 정보에서 토큰 가져오기 (헤더 전송용)
+    const authSession = JSON.parse(localStorage.getItem('authSession'));
+    if (!authSession || !authSession.token) {
+      console.warn('로그인 토큰이 없어 로그인 페이지로 이동합니다.');
+      window.location.href = 'login.html';
+      return;
+    }
+
+    // 2. 헤더에 Bearer 토큰을 담아 백엔드(http://localhost:8080/api/room-posts) 호출
+    const response = await fetch('http://localhost:8080/api/room-posts', {
+      headers: {
+        'Authorization': `Bearer ${authSession.token}`
+      }
+    });
+    
+    if (!response.ok) throw new Error('백엔드 매물 목록 조회 실패');
+    
+    const backendPosts = await response.json();
+    console.log('백엔드로부터 수신한 매물 목록:', backendPosts);
+
+    // 3. 백엔드 DTO 데이터를 프론트엔드가 기대하는 필드 구조로 변환
+    const listings = backendPosts.map(post => ({
+      id: post.id,
+      type: 'ONE_ROOM', // 기본 타입 매칭
+      address: post.location || '주소 미입력',
+      deposit: post.deposit,
+      monthlyRent: post.monthlyRent,
+      contractEnd: post.contractEndDate || '',
+      moveInDate: post.moveInDate || '',
+      description: post.content || '설명이 없는 매물이에요.',
+      imageUrl: post.imageUrl || ''
+    }));
+
+    // 4. home.js 내에 이미 정의되어 있을 renderListings 함수를 호출해 화면에 그림
+    if (typeof renderListings === 'function') {
+      renderListings(listings);
+    } else {
+      // 혹시라도 home.js에 renderListings가 없다면 직접 그려주는 예비 코드
+      const listElement = document.getElementById('listing-list');
+      if (!listElement) return;
+
+      if (listings.length === 0) {
+        listElement.innerHTML = '<p class="empty">등록된 매물이 없습니다.</p>';
+        return;
+      }
+
+      listElement.innerHTML = listings.map(listing => `
+        <article class="listing" onclick="location.href='listing.html?id=${listing.id}'">
+          ${listing.imageUrl 
+            ? `<div class="listing-image"><img src="${listing.imageUrl}" alt="매물 사진" /></div>` 
+            : '<div class="listing-image"></div>'}
+          <div class="listing-body">
+            <strong class="listing-title">${listing.description}</strong>
+            <p class="listing-price">
+              보증금 ${listing.deposit}만원 · 월세 ${listing.monthlyRent}만원<br />
+              ${listing.address}
+            </p>
+          </div>
+        </article>
+      `).join('');
+    }
+
+  } catch (error) {
+    console.error('[home.js] 매물 로딩 오류:', error);
+    const listElement = document.getElementById('listing-list');
+    if (listElement) {
+      listElement.innerHTML = '<p class="empty">매물을 불러오는 중 오류가 발생했습니다.</p>';
+    }
+  }
+}
+
+// 화면이 열릴 때 자동으로 백엔드 목록을 요청합니다.
+window.addEventListener('DOMContentLoaded', fetchRoomPosts);  
