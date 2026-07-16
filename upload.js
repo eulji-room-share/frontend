@@ -162,9 +162,9 @@ renderPhotos();
 const LISTINGS_STORAGE_KEY = 'registeredListings';
 const TYPE_CODE_MAP = { 원룸: 'ONE_ROOM', 투룸: 'TWO_ROOM', 오피스텔: 'OFFICETEL', 쉐어하우스: 'SHARE_HOUSE' };
 
-// 원본 사진(특히 휴대폰 카메라 사진)을 그대로 base64로 저장하면 localStorage
-// 용량 제한(브라우저마다 보통 5~10MB)을 쉽게 넘겨서 저장이 실패합니다.
-// 캔버스로 리사이즈 + JPEG 압축해서 훨씬 작은 크기로 줄여서 저장합니다.
+// 원본 사진을 그대로 base64로 저장하면 
+// localStorage 용량 제한을 넘겨서 저장 실패...
+// 캔버스로 리사이즈 + JPEG 압축해 훨씬 작은 크기로 줄여서 저장....
 function fileToDataUrl(file, maxDimension = 1000, quality = 0.75) {
   return new Promise((resolve, reject) => {
     const objectUrl = URL.createObjectURL(file);
@@ -197,66 +197,38 @@ function fileToDataUrl(file, maxDimension = 1000, quality = 0.75) {
 }
 
 async function saveListing() {
-  const listing = {
-    type: TYPE_CODE_MAP[document.getElementById('type').value] || 'ONE_ROOM',
-    address: document.getElementById('address').value,
+  // 백엔드 RoomPostRequest DTO에 맞춤...
+  // 프론트에 '제목' 입력란이 없으므로 주소를 활용해 임시 제목을 만듦...
+  const requestBody = {
+    title: document.getElementById('address').value + " 매물", 
+    content: document.getElementById('description').value,
     deposit: Number(document.getElementById('deposit').value) || 0,
     monthlyRent: Number(document.getElementById('rent').value) || 0,
-    contractEnd: document.getElementById('contract-end').value,
+    location: document.getElementById('address').value,
     moveInDate: document.getElementById('move-in-date').value,
-    description: document.getElementById('description').value,
-    images: [],
-    imageUrl: '',
-    // 홈 화면에서 "최근 등록순"으로 정렬하는 데 씁니다.
-    createdAt: Date.now(),
-    // 로그인한 사용자 정보를 매물에 붙입니다 (등록자 표시).
-    ownerUsername: authSession ? authSession.username : null,
-    ownerName: authSession ? authSession.name : null,
+    contractEndDate: document.getElementById('contract-end').value
   };
 
-  // 백엔드 연동 지점 3/3: 매물 등록 API 요청.
-  // authSession.token(로그인 응답에서 받은 실제 토큰)을 Authorization 헤더로 실어 보내면,
-  // 서버가 토큰의 사용자를 매물 등록자로 저장할 수 있습니다.
-  // 아래 catch의 localStorage 저장 로직은 백엔드 연동 후 삭제하면 됩니다.
-  // 사진 변환(FileReader)까지 이 try 블록 안에서 처리해서, 사진 하나가 깨져 있어도
-  // 등록 자체가 조용히 멈추지 않고 로컬 저장으로 안전하게 대체되도록 합니다.
   try {
-    const images = await Promise.all(photos.map((photo) => fileToDataUrl(photo.file)));
-    listing.images = images;
-    listing.imageUrl = images[0] || '';
-
+    // 백엔드로 매물 등록 API 보내기
     const response = await fetch(listingsApiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        // Bearer를 붙여서 보내줌...
         ...(authSession && authSession.token ? { Authorization: `Bearer ${authSession.token}` } : {}),
       },
-      body: JSON.stringify(listing),
+      body: JSON.stringify(requestBody), // 변환한 데이터 전송
     });
-    // 백엔드가 없을 때 정적 서버가 알 수 없는 경로에도 200과 함께 HTML을 돌려주는
-    // 경우가 있어, 상태 코드만이 아니라 실제 JSON 응답인지도 함께 확인합니다.
-    const contentType = response.headers.get('content-type') || '';
-    if (!response.ok || !contentType.includes('application/json')) {
-      throw new Error('매물 등록 요청 실패');
+
+    if (!response.ok) {
+      throw new Error('매물 등록 요청 실패: ' + response.status);
     }
+    
+    // 성공 시 홈으로 이동 로직은 아래 버튼 이벤트에 있으므로 패스..
   } catch (error) {
-    console.log('[Upload] 백엔드 미연동 상태 - 로컬 저장으로 대체:', error, listing);
-    listing.id = typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : String(Date.now());
-    listing.liked = false;
-
-    const storedListings = JSON.parse(localStorage.getItem(LISTINGS_STORAGE_KEY) || '[]');
-    storedListings.push(listing);
-
-    try {
-      localStorage.setItem(LISTINGS_STORAGE_KEY, JSON.stringify(storedListings));
-    } catch (storageError) {
-      // 압축한 사진을 포함해도 저장 공간이 부족하면, 사진 없이라도 매물 등록 자체는 완료시킵니다.
-      console.log('[Upload] 저장 공간 부족 - 사진 없이 재시도:', storageError);
-      listing.images = [];
-      listing.imageUrl = '';
-      storedListings[storedListings.length - 1] = listing;
-      localStorage.setItem(LISTINGS_STORAGE_KEY, JSON.stringify(storedListings));
-    }
+    console.error('[Upload] 백엔드 연동 에러:', error);
+    throw error; // 에러를 던져서 화면에 알림창이 뜨게 함
   }
 }
 

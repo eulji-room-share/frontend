@@ -16,10 +16,6 @@ const apiUrl = document.querySelector('meta[name="login-api"]').content;
 const form = document.querySelector('#login-form');
 const errorMessage = document.querySelector('#error-message');
 
-// 임시 로컬 인증 저장소 (백엔드 연동 전까지만 사용). SignUp.js가 채워 넣습니다.
-const LOCAL_ACCOUNTS_KEY = 'localAccounts';
-// 로그인 세션 저장 키. upload.js가 이 값을 읽어 "누가 이 매물을 등록했는지" 붙입니다.
-// 백엔드 연동 후에는 서버가 내려주는 실제 토큰/사용자 정보로 이 값을 채우세요.
 const AUTH_SESSION_KEY = 'authSession';
 
 function showError(message) {
@@ -31,43 +27,41 @@ form.addEventListener('submit', async (event) => {
   event.preventDefault();
   errorMessage.hidden = true;
 
+  // 백엔드에 맞춰서 username -> email 로 변환...
   const payload = {
-    username: document.querySelector('#username').value,
+    email: document.querySelector('#username').value, 
     password: document.querySelector('#password').value,
   };
 
-  // 백엔드 연동 지점 2/2: 로그인 API 요청.
-  // 회원가입(SignUp.html)으로 등록된 계정만 로그인에 성공하도록
-  // 서버에서 검증한다고 가정하고, 아래 응답 처리를 백엔드 스펙에 맞게 수정하세요.
-  // 응답 바디에 { token, user: { username, name } } 같은 형태로 로그인 정보가
-  // 내려온다고 가정하고, 성공 시 AUTH_SESSION_KEY에 그 값을 저장하도록 바꾸면 됩니다.
   try {
     const response = await fetch(apiUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
-    if (!response.ok) throw new Error('로그인 요청 실패');
-    const data = await response.json();
-    localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(data));
-    window.location.href = 'home.html';
-  } catch (error) {
-    console.log('[Login] 백엔드 미연동 상태 - 로컬 계정으로 대체 검증:', payload);
 
-    const accounts = JSON.parse(localStorage.getItem(LOCAL_ACCOUNTS_KEY) || '[]');
-    const matchedAccount = accounts.find(
-      (account) => account.username === payload.username && account.password === payload.password,
-    );
+    if (response.ok) {
+      // JWT 토큰을 JSON이 아닌 '순수 문자열'로 주므로 .text() 로 읽습니다!
+      let token = await response.text(); 
 
-    if (!matchedAccount) {
+      if (token) {
+        
+        // 다른 API 호출하기 위해 토큰을 Json 객체형태로 저장...
+        localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify({ token: token }));
+        window.location.href = 'home.html';
+      } else {
+        showError('로그인은 성공했지만 서버에서 토큰을 받지 못했습니다.');
+      }
+    } 
+    else if (response.status === 401 || response.status === 403 || response.status === 404) {
       showError('아이디 또는 비밀번호가 올바르지 않아요. 회원가입이 필요할 수도 있어요.');
-      return;
+    } 
+    else {
+      showError('서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
     }
 
-    localStorage.setItem(
-      AUTH_SESSION_KEY,
-      JSON.stringify({ username: matchedAccount.username, name: matchedAccount.name, nickname: matchedAccount.nickname }),
-    );
-    window.location.href = 'home.html';
+  } catch (error) {
+    console.error('[Login] 통신 에러:', error);
+    showError('서버와 연결할 수 없습니다. 서버(IntelliJ)가 켜져 있는지 확인해 주세요.');
   }
 });

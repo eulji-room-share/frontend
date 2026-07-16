@@ -20,15 +20,31 @@ function formatDate(value, fallback) {
   return value ? value.replaceAll('-', '.') : fallback;
 }
 
-// 백엔드 연동 지점 2/2: 매물 상세 조회 API 요청.
-// `${apiUrl}/${id}` 같은 단건 조회 엔드포인트를 쓰는 걸 권장합니다.
-// 지금은 백엔드가 없어 실패 시 upload.js가 저장해 둔 localStorage 값에서 id로 찾습니다.
+
 async function loadListing(id) {
   try {
+    // 철희 님이 만드신 단건 조회 API (GET /api/room-posts/{id}) 호출
     const response = await fetch(`${apiUrl}/${id}`);
     if (!response.ok) throw new Error('매물 조회 실패');
-    return await response.json();
+    
+    const backendData = await response.json();
+
+    // 백엔드 데이터와 프론트엔드 맵핑
+    return {
+      id: backendData.id,
+      type: 'ONE_ROOM', // 임시 기본값
+      address: backendData.location,        // location -> address
+      deposit: backendData.deposit,
+      monthlyRent: backendData.monthlyRent,
+      contractEnd: backendData.contractEndDate, // contractEndDate -> contractEnd
+      moveInDate: backendData.moveInDate,
+      description: backendData.content,     // content -> description
+      imageUrl: backendData.imageUrl || '',
+      images: backendData.imageUrl ? [backendData.imageUrl] : [] // 상세 화면 사진용
+    };
+
   } catch (error) {
+    console.error('[Listing] 단건 조회 에러:', error);
     return loadStoredListings().find((item) => String(item.id) === String(id)) || null;
   }
 }
