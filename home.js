@@ -303,6 +303,14 @@ document.getElementById('nav-chat').addEventListener('click', () => {
   alert('채팅 기능은 준비 중이에요.');
 });
 
+document.getElementById('nav-explore').addEventListener('click', () => {
+  alert('탐색 기능은 준비 중이에요.');
+});
+
+document.getElementById('nav-liked').addEventListener('click', () => {
+  alert('찜 기능은 준비 중이에요.');
+});
+
 authButton.addEventListener('click', async () => {
   const session = JSON.parse(localStorage.getItem(AUTH_SESSION_KEY) || 'null');
   
