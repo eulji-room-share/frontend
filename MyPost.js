@@ -69,7 +69,6 @@ function renderListings(listings) {
     .join('');
 }
 
-
 // 1. 내 매물 조회 (전체 조회 후 이메일로 필터링)
 async function loadMyListings() {
   try {
@@ -81,11 +80,16 @@ async function loadMyListings() {
     const myInfo = await meRes.json();
 
     // [Step 2] 전체 매물 조회 API로 세상의 모든 방 다 가져오기
-    const res = await fetch('/api/room-posts');
+    const res = await fetch('/api/room-posts', {
+      headers: { 
+        Authorization: `Bearer ${authSession.token}` 
+      }
+    });
+    
     if (!res.ok) throw new Error('전체 매물 조회 실패');
     const allPosts = await res.json();
 
-    // [Step 3] 철희님의 sellerEmail과 유저 이메일 비교..
+    // [Step 3] 팀원(철희님)의 sellerEmail과 내 유저 이메일 비교 필터링
     const myListings = allPosts
       .filter(post => post.sellerEmail === myInfo.email) 
       .map(post => ({
@@ -138,3 +142,28 @@ listElement.addEventListener('click', async (event) => {
 });
 
 loadMyListings();
+
+// MyPost.js 내부에 들어갈 삭제 요청 함수
+async function deletePost(postId) {
+  if (!confirm('정말 이 게시글을 삭제하시겠습니까?')) return;
+
+  const token = localStorage.getItem('token');
+
+  try {
+    const response = await fetch(`http://localhost:8080/api/room-posts/${postId}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}` // 토큰 검증 필수
+      }
+    });
+
+    if (response.status === 204) { // 백엔드가 HttpStatus.NO_CONTENT를 주기 때문
+      alert('삭제 완료!');
+      location.reload(); // 화면 새로고침
+    } else {
+      alert('삭제 실패! 본인이 작성한 글인지 확인해 주세요.');
+    }
+  } catch (error) {
+    console.error('삭제 통신 에러:', error);
+  }
+}
