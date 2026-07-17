@@ -318,7 +318,7 @@ authButton.addEventListener('click', async () => {
   if (session && session.token) {
     try {
       // 백엔드 로그아웃 API 호출
-      await fetch('http://13.125.229.83:8080/api/users/logout', {
+      await fetch('/api/users/logout', {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${session.token}` }
       });

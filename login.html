@@ -66,13 +66,7 @@
         <button class="signup-button" type="button" id="go-signup">회원가입</button>
       </p>
 
-      <p class="backend-note">
-        <strong>백엔드 연동 안내</strong>
-        1) 이 파일 상단 <code>&lt;meta name="login-api"&gt;</code>의 <code>content</code>를 실제 로그인 API 주소로 바꾸세요.<br />
-        2) <code>login.js</code> 안의 <code>// 백엔드 연동 지점 2/2</code> 표시된 <code>fetch(...)</code> 블록에서 요청/응답 형식을 백엔드 스펙에 맞게 수정하세요.<br />
-        3) 서버 쪽에서 <code>SignUp.html</code>로 가입 완료된 계정만 로그인 성공(200) 처리하고, 미가입 아이디는 401/404 등으로 응답해 주세요.<br />
-        4) 로그인 성공 응답에 토큰/사용자 정보를 담아 내려주면, <code>login.js</code>가 <code>localStorage</code>의 <code>authSession</code>에 저장합니다. <code>upload.js</code>가 매물 등록 시 이 값을 읽어 "누가 등록했는지" 매물에 붙입니다. 지금은 백엔드가 없어 아이디/비밀번호를 로컬에 임시 저장해 회원가입된 사용자만 로그인되도록 흉내 내고 있어요(<code>localAccounts</code>). 실제 백엔드가 연결되면 이 로컬 저장 로직은 삭제하면 됩니다.
-      </p>
+      
     </main>
     <script src="login.js" defer></script>
   </body>
