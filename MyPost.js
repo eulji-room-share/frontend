@@ -74,14 +74,14 @@ function renderListings(listings) {
 async function loadMyListings() {
   try {
     // [Step 1] 내 정보 조회 API로 내 이메일 가져오기
-    const meRes = await fetch('http://localhost:8080/api/users/me', {
+    const meRes = await fetch('http://13.125.229.83:8080/api/users/me', {
       headers: { Authorization: `Bearer ${authSession.token}` }
     });
     if (!meRes.ok) throw new Error('내 정보 조회 실패');
     const myInfo = await meRes.json();
 
     // [Step 2] 전체 매물 조회 API로 세상의 모든 방 다 가져오기
-    const res = await fetch('http://localhost:8080/api/room-posts');
+    const res = await fetch('http://13.125.229.83:8080/api/room-posts');
     if (!res.ok) throw new Error('전체 매물 조회 실패');
     const allPosts = await res.json();
 
@@ -111,7 +111,7 @@ async function loadMyListings() {
 // 2. 매물 삭제 API 연동
 async function deleteListing(id) {
   try {
-    const response = await fetch(`http://localhost:8080/api/room-posts/${id}`, {
+    const response = await fetch(`http://13.125.229.83:8080/api/room-posts/${id}`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${authSession.token}` },
     });
