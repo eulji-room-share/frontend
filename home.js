@@ -265,7 +265,7 @@ async function showMypageView() {
   // 토큰이 있다면 백엔드에서 내 정보 받기
   if (isLoggedIn) {
     try {
-      const res = await fetch('http://13.125.229.83:8080/api/users/me', {
+      const res = await fetch('/api/users/me', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {

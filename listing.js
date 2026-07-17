@@ -227,7 +227,7 @@ async function fetchRoomPosts() {
     }
 
     // 2. 헤더에 Bearer 토큰을 실어서 백엔드 호출 (403 에러 방지)
-    const response = await fetch('http://13.125.229.83:8080/api/room-posts', {
+    const response = await fetch('/api/room-posts', {
       headers: {
         'Authorization': `Bearer ${authSession.token}`
       }
