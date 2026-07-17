@@ -21,7 +21,7 @@ form.addEventListener('submit', async (event) => {
   event.preventDefault();
   errorMessage.hidden = true;
 
-  // ✨ 백엔드 명세서에 맞춰 딱 3개(email, password, nickname)만 전송 패키징!
+  // 백엔드 명세서에 맞춰 딱 3개(email, password, nickname)만 전송 패키징!
   const payload = {
     email: document.querySelector('#username').value,
     password: document.querySelector('#password').value,

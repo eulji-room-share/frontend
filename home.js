@@ -265,7 +265,7 @@ async function showMypageView() {
   // 토큰이 있다면 백엔드에서 내 정보 받기
   if (isLoggedIn) {
     try {
-      const res = await fetch('http://localhost:8080/api/users/me', {
+      const res = await fetch('http://13.125.229.83:8080/api/users/me', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
@@ -318,7 +318,7 @@ authButton.addEventListener('click', async () => {
   if (session && session.token) {
     try {
       // 백엔드 로그아웃 API 호출
-      await fetch('http://localhost:8080/api/users/logout', {
+      await fetch('http://13.125.229.83:8080/api/users/logout', {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${session.token}` }
       });
