@@ -214,3 +214,63 @@ document.addEventListener('keydown', (event) => {
     }
   });
 })();
+
+// 기존 fetchRoomPosts 함수를 아래 코드로 완전히 대체해 주세요!
+async function fetchRoomPosts() {
+  try {
+    // 1. 로그인 세션 정보에서 토큰 가져오기
+    const authSession = JSON.parse(localStorage.getItem('authSession'));
+    if (!authSession || !authSession.token) {
+      console.warn('로그인 토큰이 없어 로그인 페이지로 이동합니다.');
+      window.location.href = 'login.html';
+      return;
+    }
+
+    // 2. 헤더에 Bearer 토큰을 실어서 백엔드 호출 (403 에러 방지)
+    const response = await fetch('http://localhost:8080/api/room-posts', {
+      headers: {
+        'Authorization': `Bearer ${authSession.token}`
+      }
+    });
+    if (!response.ok) throw new Error('목록 조회 실패');
+    
+    const posts = await response.json();
+    console.log('불러온 매물 목록:', posts); 
+
+    // 3. HTML 화면에 동적으로 매물 리스트 그려주기
+    const listElement = document.getElementById('listing-list'); // HTML의 목록 감싸는 태그 ID에 맞추기
+    if (!listElement) return; // 목록 엘리먼트가 없는 상세 페이지라면 실행 방지
+
+    if (posts.length === 0) {
+      listElement.innerHTML = '<p class="empty">등록된 매물이 없습니다.</p>';
+      return;
+    }
+
+    // HTML에 매물 카드 꽂아 넣기
+    listElement.innerHTML = posts.map(post => `
+      <article class="listing" onclick="location.href='listing.html?id=${post.id}'" style="cursor: pointer;">
+        ${post.imageUrl 
+          ? `<img class="listing-image" src="${post.imageUrl}" alt="매물 사진" />` 
+          : '<div class="listing-image"></div>'}
+        <div class="listing-body">
+          <strong class="listing-title">${post.content || '설명이 없는 매물이에요.'}</strong>
+          <p class="listing-price">
+            보증금 ${post.deposit}만원 · 월세 ${post.monthlyRent}만원<br />
+            ${post.location || '주소 미입력'}<br />
+            입주 가능 시기: ${post.moveInDate ? post.moveInDate.replaceAll('-', '.') : '협의 가능'}
+          </p>
+        </div>
+      </article>
+    `).join('');
+
+  } catch (error) {
+    console.error('목록 불러오기 에러 발생:', error);
+    const listElement = document.getElementById('listing-list');
+    if (listElement) {
+      listElement.innerHTML = '<p class="empty">매물 목록을 불러오는 중 오류가 발생했습니다.</p>';
+    }
+  }
+}
+
+// 화면 로드 시 실행되도록 설정
+window.addEventListener('DOMContentLoaded', fetchRoomPosts);
