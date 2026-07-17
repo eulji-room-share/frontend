@@ -245,3 +245,43 @@ document.getElementById('step3-next').addEventListener('click', async () => {
     button.disabled = false;
   }
 });
+
+// upload.js 내부에 들어갈 등록 로직
+const uploadForm = document.querySelector('#uploadForm'); // HTML 폼 태그 선택자
+
+uploadForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  
+  // 1. 입력 필드값 가져오기
+  const postData = {
+    title: document.querySelector('#title').value,
+    content: document.querySelector('#content').value,
+    deposit: parseInt(document.querySelector('#deposit').value),
+    monthlyRent: parseInt(document.querySelector('#monthlyRent').value),
+    location: document.querySelector('#location').value,
+    // ... 나머지 필요한 필드 데이터 수집
+  };
+
+  // 2. 로그인할 때 localStorage에 저장해둔 토큰 가져오기
+  const token = localStorage.getItem('token'); 
+
+  try {
+    const response = await fetch('http://localhost:8080/api/room-posts', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}` // 여기에 토큰을 실어 보냅니다!
+      },
+      body: JSON.stringify(postData)
+    });
+
+    if (response.ok) {
+      alert('성공적으로 등록되었습니다!');
+      window.location.href = 'listing.html'; // 등록 후 목록 페이지로 이동
+    } else {
+      alert('등록 실패! 로그인 상태를 확인해 주세요.');
+    }
+  } catch (error) {
+    console.error('통신 에러:', error);
+  }
+});
