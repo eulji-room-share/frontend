@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- 백엔드 연동 지점 1/2: 로그인 API 주소. 실제 백엔드 주소로 교체하세요. -->
+    <meta name="login-api" content="/api/users/login" />
+    <title>로그인 | 자취방 찾기</title>
+    <style>
+      :root { --blue: #1b63f0; --ink: #0b1730; --muted: #8fa0bd; --line: #edf0f5; --border: #dfe4ec; }
+      * { box-sizing: border-box; }
+      body { margin: 0; min-height: 100dvh; background: #fff; color: var(--ink); font-family: "Pretendard Variable", Pretendard, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif; }
+      button, input { font: inherit; }
+      button { border: 0; cursor: pointer; background: transparent; }
+      .app { width: min(100%, 480px); min-height: 100dvh; margin: 0 auto; padding: 40px 22px 28px; background: #fff; display: flex; flex-direction: column; }
+
+      .back-button { width: 40px; height: 40px; margin: 0 0 16px -8px; display: grid; place-items: center; color: var(--ink); }
+      .back-button svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; }
+
+      h1 { margin: 0 0 8px; font-size: 24px; font-weight: 700; letter-spacing: -0.04em; }
+      .subtitle { margin: 0 0 32px; color: var(--muted); font-size: 15px; line-height: 1.5; }
+
+      .error-message { margin: 0 0 20px; padding: 12px 14px; border-radius: 10px; background: #fdeceb; color: #c23b2f; font-size: 14px; }
+
+      .field { margin-bottom: 20px; }
+      .field label { display: block; margin-bottom: 8px; font-size: 14px; font-weight: 600; }
+      .field input { width: 100%; height: 54px; padding: 0 16px; border: 1px solid var(--border); border-radius: 12px; font-size: 16px; color: var(--ink); background: #fff; outline: 0; }
+      .field input:focus { border-color: var(--blue); }
+
+      .submit-button { margin-top: 8px; width: 100%; height: 56px; background: var(--blue); color: #fff; font-size: 16px; font-weight: 700; border-radius: 12px; }
+
+      .signup-row { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 18px; font-size: 14px; color: var(--muted); }
+      .signup-button { color: var(--blue); font-weight: 700; text-decoration: underline; }
+
+      .backend-note { margin-top: 28px; padding: 14px 16px; border: 1px dashed var(--border); border-radius: 10px; color: var(--muted); font-size: 13px; line-height: 1.7; }
+      .backend-note strong { display: block; margin-bottom: 4px; color: var(--ink); }
+      .backend-note code { color: var(--ink); background: var(--line); padding: 1px 5px; border-radius: 4px; }
+    </style>
+  </head>
+  <body>
+    <main class="app">
+      <button class="back-button" type="button" id="back-btn" aria-label="뒤로가기">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 6-6 6 6 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <h1>로그인</h1>
+      <p class="subtitle">가입하신 아이디와 비밀번호로<br />로그인해주세요.</p>
+
+      <p class="error-message" id="error-message" hidden></p>
+
+      <form id="login-form">
+        <div class="field">
+          <label for="username">이메일</label>
+          <input id="username" type="email" placeholder="이메일을 입력하세요" required />
+        </div>
+
+        <div class="field">
+          <label for="password">비밀번호</label>
+          <input id="password" name="password" type="password" autocomplete="current-password" placeholder="비밀번호를 입력하세요" required />
+        </div>
+
+        <button class="submit-button" type="submit">로그인</button>
+      </form>
+
+      <p class="signup-row">
+        아직 회원이 아니신가요?
+        <button class="signup-button" type="button" id="go-signup">회원가입</button>
+      </p>
+
+      
+    </main>
+    <script src="login.js" defer></script>
+  </body>
+</html>
